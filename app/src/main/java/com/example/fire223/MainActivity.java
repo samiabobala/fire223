@@ -1,6 +1,9 @@
 package com.example.fire223;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Intent;
+import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -8,6 +11,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -23,6 +27,9 @@ import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
+import com.google.firebase.iid.FirebaseInstanceId;
+import com.google.firebase.iid.InstanceIdResult;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 public class MainActivity extends AppCompatActivity  {
 
@@ -31,7 +38,12 @@ public class MainActivity extends AppCompatActivity  {
     private String TAG = "xxxx";
     GoogleSignInClient mGoogleSignInClient;
     private TextView tx;
+    private TextView state;
     private Button sgo;
+    private Button news;
+    private Button tkn;
+
+
     FirebaseAuth mAuth;
 
 
@@ -42,6 +54,9 @@ public class MainActivity extends AppCompatActivity  {
         signInButton = findViewById(R.id.sign_in_button);
         tx = (TextView)findViewById(R.id.textView);
         sgo = (Button)findViewById(R.id.button2);
+        news = (Button)findViewById(R.id.news);
+        tkn = (Button)findViewById(R.id.tkn);
+        state = (TextView)findViewById(R.id.textView2);
 
 
         // Configure sign-in to request the user's ID, email address, and basic
@@ -61,8 +76,25 @@ public class MainActivity extends AppCompatActivity  {
 
 
 
-        mAuth = FirebaseAuth.getInstance();
+        mAuth = FirebaseAuth.getInstance();// be cerfule
+        ////////////////////////////////////////////////////////////////////
 
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            String channelId = getString(R.string.default_notification_channel_id);
+            String channelName = getString(R.string.default_notification_channel_name);
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(new NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_LOW));
+
+
+        }
+        if(getIntent().getExtras() != null){
+            for (String key : getIntent().getExtras().keySet()){
+                Object value = getIntent().getExtras().get(key);
+                Log.d(TAG, "key: " + key + "Value" + value);
+            }
+        }
+
+/////////////////////////////////////////////////////////////////////////
 
         signInButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -78,6 +110,22 @@ public class MainActivity extends AppCompatActivity  {
                 signOut();
             }
         });
+
+////////////////////////////////////////////////////////////////////////
+        news.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                subscribe();
+            }
+        });
+
+        tkn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                getTok();
+            }
+        });
+
 
     }
 
@@ -182,16 +230,53 @@ public class MainActivity extends AppCompatActivity  {
     }//
 
 
+    public void updateUI(String msg) {
+        tx.setText(msg);
+
+
+    }
+/***********************************
+ * *********************************
+ * *********************************
+ * *********************************
+ * *******FOR CLOUD MESSGING********
+ **********************************/
 
 
 
+public void subscribe(){
+    Log.d(TAG, "sub to wither");
+
+    FirebaseMessaging.getInstance().subscribeToTopic("weather")
+            .addOnCompleteListener(new OnCompleteListener<Void>() {
+                @Override
+                public void onComplete(@NonNull Task<Void> task) {
+                    String msg = "we are the champs";
+                    if(!task.isSuccessful())
+                        msg = "we are losers";
+                    Log.d(TAG, msg);
+                    Toast.makeText(MainActivity.this, msg, Toast.LENGTH_LONG).show();
+                }
+            });
+}
 
 
 
-
-public void updateUI(String msg){
-tx.setText(msg);
-
+public void getTok()
+{
+    FirebaseInstanceId.getInstance().getInstanceId()
+            .addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
+                @Override
+                public void onComplete(@NonNull Task<InstanceIdResult> task) {
+                    if(!task.isSuccessful())
+                    {
+                        Log.d(TAG, "fuck!!");
+                        return;
+                    }
+                    String token = task.getResult().getToken();
+                    Log.d(TAG, token);
+                }
+            });
 }
 
 
